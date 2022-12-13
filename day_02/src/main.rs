@@ -1,5 +1,20 @@
 use std::fs;
 
+#[derive(PartialEq)]
+pub enum Tool {
+    Rock,
+    Paper,
+    Scissors,
+    Unknown,
+}
+
+pub enum Outcome {
+    Win,
+    Draw,
+    Lose,
+    Unknown,
+}
+
 fn main() {
     let guide =
         fs::read_to_string("strategy_guide.txt").expect("Something went wrong reading the file");
@@ -11,45 +26,73 @@ fn main() {
     println!("Part two answer: {}", part_two_answer);
 }
 
-fn get_tool_name(tool: char) -> &'static str {
-    match tool {
-        'X' | 'A' => "Rock",
-        'Y' | 'B' => "Paper",
-        'Z' | 'C' => "Scissors",
-        _ => "Unknown",
+fn get_tool_from_char(tool_char: char) -> Tool {
+    match tool_char {
+        'X' | 'A' => Tool::Rock,
+        'Y' | 'B' => Tool::Paper,
+        'Z' | 'C' => Tool::Scissors,
+        _ => Tool::Unknown,
     }
 }
 
-fn get_choice_from_outcome(opponent_choice: char, outcome: char) -> char {
+fn get_player_choice_from_outcome(opponent_choice: &Tool, outcome: Outcome) -> Tool {
     match outcome {
-        'X' => {
-            // You need to lose
-            match opponent_choice {
-                'A' => 'Z',
-                'B' => 'X',
-                'C' => 'Y',
-                _ => 'X', // Will never happen
-            }
-        }
-        'Y' => {
-            // You need to draw
-            match opponent_choice {
-                'A' => 'X',
-                'B' => 'Y',
-                'C' => 'Z',
-                _ => 'Y', // Will never happen
-            }
-        }
-        'Z' => {
-            // You need to win
-            match opponent_choice {
-                'A' => 'Y',
-                'B' => 'Z',
-                'C' => 'X',
-                _ => 'Z' // will never happen
-            }
-        }
-        _ => 'A', // Will never happen
+        Outcome::Win => match opponent_choice {
+            Tool::Rock => Tool::Paper,
+            Tool::Paper => Tool::Scissors,
+            Tool::Scissors => Tool::Rock,
+            _ => Tool::Unknown,
+        },
+        Outcome::Draw => match opponent_choice {
+            Tool::Rock => Tool::Rock,
+            Tool::Paper => Tool::Paper,
+            Tool::Scissors => Tool::Scissors,
+            _ => Tool::Unknown,
+        },
+        Outcome::Lose => match opponent_choice {
+            Tool::Rock => Tool::Scissors,
+            Tool::Paper => Tool::Rock,
+            Tool::Scissors => Tool::Paper,
+            _ => Tool::Unknown,
+        },
+        _ => Tool::Unknown,
+    }
+}
+
+fn get_outcome_from_char(outcome_char: char) -> Outcome {
+    match outcome_char {
+        'Z' => Outcome::Win,
+        'Y' => Outcome::Draw,
+        'X' => Outcome::Lose,
+        _ => Outcome::Unknown,
+    }
+}
+
+pub fn get_round_score(player_choice: Tool, opponent_choice: Tool) -> i32 {
+    let mut score = 0;
+
+    if is_win(&player_choice, &opponent_choice) {
+        score += 6;
+    } else if opponent_choice == player_choice {
+        score += 3;
+    }
+
+    match player_choice {
+        Tool::Rock => score += 1,
+        Tool::Paper => score += 2,
+        Tool::Scissors => score += 3,
+        _ => (),
+    }
+
+    score
+}
+
+pub fn is_win(choice: &Tool, opponent_choice: &Tool) -> bool {
+    match opponent_choice {
+        Tool::Rock => matches!(choice, Tool::Paper),
+        Tool::Paper => matches!(choice, Tool::Scissors),
+        Tool::Scissors => matches!(choice, Tool::Rock),
+        _ => false,
     }
 }
 
@@ -60,24 +103,17 @@ pub fn part_one(strategy_guide: &str) -> i32 {
     for line in strategy_guide.lines() {
         let mut it = line.split_whitespace();
 
-        // Unwrap the first char
-        let opponent_choice = it.next().unwrap().chars().next().unwrap();
-        // Unwrap the second char (Each line is always two chars)
-        let choice = it.last().unwrap().chars().next().unwrap();
+        // Unwrap each char (each line is always two chars)
+        let opponent_choice_char = it.next().unwrap().chars().next().unwrap();
+        let player_choice = it.last().unwrap().chars().next().unwrap();
 
-        let round_score = get_round_score(choice, opponent_choice);
+        let opponent_choice = get_tool_from_char(opponent_choice_char);
+        let player_choice = get_tool_from_char(player_choice);
+
+        let round_score = get_round_score(player_choice, opponent_choice);
 
         game_score += round_score;
-
-        println!(
-            "Round: {:?} vs {:?} | Score: {}",
-            get_tool_name(choice),
-            get_tool_name(opponent_choice),
-            round_score
-        );
     }
-
-    println!("Total score: {}", game_score);
 
     game_score
 }
@@ -89,61 +125,20 @@ pub fn part_two(guide: &str) -> i32 {
     for line in guide.lines() {
         let mut it = line.split_whitespace();
 
-        // Unwrap the first char
-        let opponent_choice = it.next().unwrap().chars().next().unwrap();
-        // Unwrap the second char (Each line is always two chars)
-        let outcome = it.last().unwrap().chars().next().unwrap();
+        // Unwrap each char (each line is always two chars)
+        let opponent_choice_char = it.next().unwrap().chars().next().unwrap();
+        let outcome_char = it.last().unwrap().chars().next().unwrap();
 
-        let choice = get_choice_from_outcome(opponent_choice, outcome);
+        let opponent_choice = get_tool_from_char(opponent_choice_char);
+        let outcome = get_outcome_from_char(outcome_char);
+        let player_choice = get_player_choice_from_outcome(&opponent_choice, outcome);
 
-        let round_score = get_round_score(choice, opponent_choice);
+        let round_score = get_round_score(player_choice, opponent_choice);
 
         game_score += round_score;
-
-        println!(
-            "Round: {:?} vs {:?} | Score: {} | Outcome: {:?}",
-            get_tool_name(choice),
-            get_tool_name(opponent_choice),
-            round_score,
-            outcome
-        );
     }
-
-    println!("Total score: {}", game_score);
 
     game_score
-}
-
-pub fn is_win(choice: char, opponent_choice: char) -> bool {
-    match choice {
-        'Y' => opponent_choice == 'A', // Opponent chooses Rock
-        'Z' => opponent_choice == 'B', // Opponent chooses Paper
-        'X' => opponent_choice == 'C', // Opponent choose Scissors
-        _ => false,
-    }
-}
-
-fn is_draw(choice: char, opponent_choice: char) -> bool {
-    get_tool_name(choice) == get_tool_name(opponent_choice)
-}
-
-pub fn get_round_score(choice: char, opponent_choice: char) -> i32 {
-    let mut score = 0;
-
-    if is_win(choice, opponent_choice) {
-        score += 6;
-    } else if is_draw(choice, opponent_choice) {
-        score += 3;
-    }
-
-    match choice {
-        'X' => score += 1,
-        'Y' => score += 2,
-        'Z' => score += 3,
-        _ => (),
-    }
-
-    score
 }
 
 #[cfg(test)]
