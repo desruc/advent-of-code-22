@@ -6,6 +6,9 @@ fn main() {
 
     let part_one_answer = part_one(&rucksacks);
     println!("Part one answer: {}", part_one_answer);
+
+    let part_two_answer = part_two(&rucksacks);
+    println!("Part two answer: {}", part_two_answer);
 }
 
 fn split_rucksack_in_half(rucksack: &str) -> (&str, &str) {
@@ -35,14 +38,42 @@ pub fn part_one(input: &str) -> usize {
     let mut sum = 0;
 
     for line in input.lines() {
-        println!("{}", line);
         let (first_half, second_half) = split_rucksack_in_half(line.trim());
 
-        println!("{} {}", first_half, second_half);
         let dup = find_duplicate_char(&first_half, &second_half);
         let priority = get_item_priority(dup);
 
         sum += priority;
+    }
+
+    sum
+}
+
+fn find_char_present_in_each_string(group: &[String]) -> char {
+    let mut dup = ' ';
+
+    for c in group[0].chars() {
+        if group[1].contains(c) && group[2].contains(c) {
+            dup = c;
+            break;
+        }
+    }
+
+    dup
+}
+
+pub fn part_two(input: &str) -> usize {
+    let l: Vec<String> = input.lines().map(|x| String::from(x.trim())).collect();
+
+    let groups: Vec<&[String]> = l.chunks(3).collect();
+
+    let mut sum = 0;
+
+    for group in groups {
+        // Find the letter that is in each string
+        let dup = find_char_present_in_each_string(group);
+        let weight = get_item_priority(dup);
+        sum += weight;
     }
 
     sum
@@ -63,5 +94,11 @@ mod tests {
     fn part_one_works() {
         let sum = part_one(TEST_INPUT);
         assert_eq!(sum, 157);
+    }
+
+    #[test]
+    fn part_two_works() {
+        let sum = part_two(TEST_INPUT);
+        assert_eq!(sum, 70);
     }
 }
