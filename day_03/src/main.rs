@@ -63,20 +63,19 @@ fn find_char_present_in_each_string(group: &[String]) -> char {
 }
 
 pub fn part_two(input: &str) -> usize {
-    let l: Vec<String> = input.lines().map(|x| String::from(x.trim())).collect();
+    let lines: Vec<String> = input
+        .lines()
+        .map(|x| String::from(x.trim()))
+        .collect();
 
-    let groups: Vec<&[String]> = l.chunks(3).collect();
-
-    let mut sum = 0;
-
-    for group in groups {
-        // Find the letter that is in each string
-        let dup = find_char_present_in_each_string(group);
-        let weight = get_item_priority(dup);
-        sum += weight;
-    }
-
-    sum
+    lines
+        .chunks(3)
+        .map(|g| {
+            let dup = find_char_present_in_each_string(g);
+            get_item_priority(dup)
+        })
+        .reduce(|a, b| a + b)
+        .unwrap()
 }
 
 #[cfg(test)]
